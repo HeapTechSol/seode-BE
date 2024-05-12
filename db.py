@@ -4,7 +4,7 @@ from psycopg2 import pool
 db_params = {
     'dbname': 'seode',
     'user': 'postgres',
-    'password': 'password',
+    'password': 'admin',
     'host': 'localhost',
     'port': '5432'
 }
