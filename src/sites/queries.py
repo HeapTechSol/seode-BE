@@ -1,7 +1,8 @@
-# Queries for sites
-get_sites_query = "SELECT * FROM sites"
-get_site_by_id_query = "SELECT * FROM sites WHERE siteId = %s"
-check_name_exists_query = "SELECT * FROM sites WHERE name = %s"
-add_site_query = "INSERT INTO sites (name, url) VALUES (%s, %s)"
-delete_site_query = "DELETE FROM sites WHERE siteId = %s"
-update_site_query = "UPDATE sites SET name = %s, url = %s WHERE siteId = %s"
+get_sites_query = "SELECT id, siteUrl, country, language, businessType FROM sites"
+get_site_by_id_query = "SELECT id, siteUrl, country, language, businessType FROM sites WHERE id = %s"
+check_site_exists_query = "SELECT id FROM sites WHERE siteUrl = %s"
+add_site_query = "INSERT INTO sites (siteUrl, country, language, businessType) VALUES (%s, %s, %s, %s) RETURNING id"
+delete_site_query = "DELETE FROM sites WHERE id = %s"
+update_site_query = "UPDATE sites SET siteUrl = %s, country = %s, language = %s, businessType = %s WHERE id = %s"
+
+
