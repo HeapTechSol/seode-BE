@@ -51,7 +51,7 @@ def generate_token(email, password):
     user = authenticate(email, password)
     if user:
         access_token = create_access_token(identity=user[0])  # You can customize the token as needed
-        return access_token
+        return {'access_token':access_token, 'firstname':user[1], 'lastname':user[2], 'email':user[3]}
     else:
         return None
 
@@ -64,7 +64,7 @@ def login():
     
     access_token = generate_token(email, password)
     if access_token:
-        return jsonify({"access_token": access_token}), 200
+        return jsonify(access_token), 200
     else:
         return jsonify({"message": "Invalid credentials"}), 401
 
@@ -80,8 +80,7 @@ def create_user(firstname, lastname, email, password):
                     return jsonify({"message": "Email already exists."}), 400
                 cur.execute(add_user_query, (firstname, lastname, email, password))
                 conn.commit()
-                access_token = generate_token(email, password)
-                return jsonify({"message": "User signed up successfully", "access_token": access_token}), 201
+                return jsonify({"message": "User signed up successfully"}), 201
         return jsonify({"message": "Failed to connect to database"}), 500
     except Exception as e:
         print(e)
