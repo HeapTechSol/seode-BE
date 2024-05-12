@@ -4,8 +4,7 @@ import bcrypt
 from flask_jwt_extended import JWTManager, create_access_token
 from flask import jsonify
 from flask_jwt_extended import create_access_token
-from src.users.queries import check_email_exists_query
-from src.users.controller import add_user
+from src.users.queries import check_email_exists_query, add_user_query
 
 
 def hash_password(password):
@@ -68,8 +67,29 @@ def login():
         return jsonify({"access_token": access_token}), 200
     else:
         return jsonify({"message": "Invalid credentials"}), 401
-    
 
+
+def create_user(firstname, lastname, email, password):
+    try:
+        password = hash_password(password)
+        conn = get_connection()
+        if conn:
+            with conn.cursor() as cur:
+                cur.execute(check_email_exists_query, (email,))
+                if cur.rowcount > 0:
+                    return jsonify({"message": "Email already exists."}), 400
+                cur.execute(add_user_query, (firstname, lastname, email, password))
+                conn.commit()
+                access_token = generate_token(email, password)
+                return jsonify({"message": "User signed up successfully", "access_token": access_token}), 201
+        return jsonify({"message": "Failed to connect to database"}), 500
+    except Exception as e:
+        print(e)
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if conn:
+            release_connection(conn)
+    
 def signup():
     data = request.json
     firstname = data.get('firstname')
@@ -84,10 +104,5 @@ def signup():
     # Check if the user already exists (optional, depending on your application logic)
 
     # Add the user to the database
-    result = add_user(firstname, lastname, email, password)
-    if result == "User created successfully!":
-        # Generate an access token for the newly signed up user
-        access_token = generate_token(email, password)
-        return jsonify({"message": "User signed up successfully", "access_token": access_token}), 201
-    else:
-        return jsonify({"message": "Failed to create user"}), 500
+    result = create_user(firstname, lastname, email, password)
+    return result
