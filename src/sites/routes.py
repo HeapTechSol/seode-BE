@@ -6,7 +6,7 @@ site_routes = Blueprint('site_routes', __name__)
 
 # Define routes
 site_routes.add_url_rule("/sites", view_func=get_sites, methods=["GET"])
-site_routes.add_url_rule("/sites", view_func=add_site, methods=["POST"])
+site_routes.add_url_rule("/add-site", view_func=add_site, methods=["POST"])
 site_routes.add_url_rule("/sites/<int:id>", view_func=get_site_by_id, methods=["GET"])
 site_routes.add_url_rule("/sites/<int:id>", view_func=delete_site, methods=["DELETE"])
 site_routes.add_url_rule("/sites/<int:id>", view_func=update_site, methods=["PUT"])

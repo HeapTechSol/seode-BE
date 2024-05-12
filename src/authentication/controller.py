@@ -1,4 +1,4 @@
-from flask import jsonify, request
+from flask import jsonify, request, make_response
 from db import get_connection, release_connection
 import bcrypt
 from flask_jwt_extended import JWTManager, create_access_token
@@ -66,7 +66,8 @@ def login():
     if access_token:
         return jsonify(access_token), 200
     else:
-        return jsonify({"message": "Invalid credentials"}), 401
+        response = make_response(jsonify({"message": "Invalid credentials"}), 401)
+        return response
 
 
 def create_user(firstname, lastname, email, password):
