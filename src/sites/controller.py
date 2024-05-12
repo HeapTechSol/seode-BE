@@ -5,7 +5,7 @@ from flask import jsonify, request
 from db import get_connection, release_connection
 
 # Import queries from queries.py
-from .queries import get_sites_query, get_site_by_id_query, check_name_exists_query, \
+from .queries import get_sites_query, get_site_by_id_query, check_site_exists_query, \
                       add_site_query, delete_site_query, update_site_query
 
 # Function to get all sites
@@ -24,12 +24,12 @@ def get_sites():
         release_connection(conn)
 
 # Function to get site by ID
-def get_site_by_id(siteId):
+def get_site_by_id(id):
     try:
         conn = get_connection()
         if conn:
             with conn.cursor() as cur:
-                cur.execute(get_site_by_id_query, (siteId,))
+                cur.execute(get_site_by_id_query, (id,))
                 site = cur.fetchone()
                 if site:
                     return jsonify(site), 200
@@ -44,14 +44,17 @@ def get_site_by_id(siteId):
 def add_site():
     try:
         data = request.json
-        name, url = data['name'], data['url']
+        site_url = data['siteUrl']
+        country = data.get('country')
+        language = data.get('language')
+        business_type = data.get('businessType')
         conn = get_connection()
         if conn:
             with conn.cursor() as cur:
-                cur.execute(check_name_exists_query, (name,))
+                cur.execute(check_site_exists_query, (site_url,))
                 if cur.rowcount > 0:
-                    return "Site name already exists.", 400
-                cur.execute(add_site_query, (name, url))
+                    return "Site URL already exists.", 400
+                cur.execute(add_site_query, (site_url, country, language, business_type))
                 conn.commit()
                 return "Site added successfully!", 201
         return jsonify({"message": "Failed to connect to database"}), 500
@@ -61,15 +64,15 @@ def add_site():
         release_connection(conn)
 
 # Function to delete a site
-def delete_site(siteId):
+def delete_site(id):
     try:
         conn = get_connection()
         if conn:
             with conn.cursor() as cur:
-                cur.execute(get_site_by_id_query, (siteId,))
+                cur.execute(get_site_by_id_query, (id,))
                 if not cur.fetchone():
                     return "Site does not exist in the database", 404
-                cur.execute(delete_site_query, (siteId,))
+                cur.execute(delete_site_query, (id,))
                 conn.commit()
                 return "Site deleted successfully.", 200
         return jsonify({"message": "Failed to connect to database"}), 500
@@ -79,17 +82,20 @@ def delete_site(siteId):
         release_connection(conn)
 
 # Function to update a site
-def update_site(siteId):
+def update_site(id):
     try:
         data = request.json
-        name, url = data['name'], data['url']
+        site_url = data['siteUrl']
+        country = data.get('country')
+        language = data.get('language')
+        business_type = data.get('businessType')
         conn = get_connection()
         if conn:
             with conn.cursor() as cur:
-                cur.execute(get_site_by_id_query, (siteId,))
+                cur.execute(get_site_by_id_query, (id,))
                 if not cur.fetchone():
                     return "Site does not exist in the database", 404
-                cur.execute(update_site_query, (name, url, siteId))
+                cur.execute(update_site_query, (site_url, country, language, business_type, id))
                 conn.commit()
                 return "Site updated successfully.", 200
         return jsonify({"message": "Failed to connect to database"}), 500
@@ -97,23 +103,7 @@ def update_site(siteId):
         return jsonify({"error": str(e)}), 500
     finally:
         release_connection(conn)
-        
-def delete_site(siteId):
-    try:
-        conn = get_connection()
-        if conn:
-            with conn.cursor() as cur:
-                cur.execute(get_site_by_id_query, (siteId,))
-                if not cur.fetchone():
-                    return "Site does not exist in the database", 404
-                cur.execute(delete_site_query, (siteId,))
-                conn.commit()
-                return "Site deleted successfully.", 200
-        return jsonify({"message": "Failed to connect to database"}), 500
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    finally:
-        release_connection(conn)   
+ 
         
 def get_all_website_links():
     
