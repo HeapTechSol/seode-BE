@@ -68,7 +68,7 @@ def add_user():
         conn = get_connection()
         if conn:
             with conn.cursor() as cur:
-                cur.execute(check_email_exists_query, (email,))
+                # cur.execute(check_email_exists_query, (email,))
                 if cur.rowcount > 0:
                     return "Email already exists.", 400
                 cur.execute(add_user_query, (firstname, lastname, email, password))
