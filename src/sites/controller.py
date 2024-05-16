@@ -105,12 +105,11 @@ def update_site(id):
         release_connection(conn)
  
         
-def get_all_website_links():
-    
+def get_base_urls_of_website():
     bodyData = request.json
     base_url = bodyData['base_url']
-    # Initialize an empty set to store unique links
-    all_links = set()
+    # Initialize an empty set to store unique base URLs
+    base_urls = set()
     
     # Send a GET request to the base_url
     response = requests.get(base_url)
@@ -123,14 +122,14 @@ def get_all_website_links():
         # Get the value of the href attribute of the anchor tag
         link = anchor_tag.get('href')
         
-        # If the link is not None and is a valid URL, add it to the set of links
+        # If the link is not None and is a valid URL, extract the base URL
         if link and is_valid_url(link):
-            absolute_link = urljoin(base_url, link)
-            all_links.add(absolute_link)
+            parsed_link = urlparse(link)
+            base_urls.add(parsed_link.scheme + "://" + parsed_link.netloc)
     
-    return jsonify({ "data": list(all_links) })
+    return jsonify({ "data": list(base_urls) })
 
 def is_valid_url(url):
     # Use urlparse to check if the URL has a valid scheme (http or https)
     parsed = urlparse(url)
-    return bool(parsed.scheme) and bool(parsed.netloc)     
+    return bool(parsed.scheme) and bool(parsed.netloc)
