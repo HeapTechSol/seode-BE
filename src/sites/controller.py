@@ -1,8 +1,11 @@
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse, urljoin
-from flask import jsonify, request, make_response
+from flask import jsonify, request
 from db import get_connection, release_connection
+from bs4 import BeautifulSoup
+import openai
+import os
 
 # Import queries from queries.py
 from .queries import get_sites_query, get_site_by_id_query, check_site_exists_query, \
@@ -15,10 +18,8 @@ def get_sites():
         if conn:
             with conn.cursor() as cur:
                 cur.execute(get_sites_query)
-                sites = cur.fetchall()  
-                keys = ["id", "siteUrl", "country", "language", "businessType","createdat"]
-                array_of_objects = [dict(zip(keys, site)) for site in sites]
-                return jsonify(array_of_objects), 200
+                sites = cur.fetchall()
+                return jsonify(sites), 200
         return jsonify({"message": "Failed to connect to database"}), 500
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -53,16 +54,15 @@ def add_site():
         conn = get_connection()
         if conn:
             with conn.cursor() as cur:
-                response = cur.execute(check_site_exists_query, (site_url,))
-                print(response,"print",cur.rowcount)
+                cur.execute(check_site_exists_query, (site_url,))
                 if cur.rowcount > 0:
                     return "Site URL already exists.", 400
                 cur.execute(add_site_query, (site_url, country, language, business_type))
                 conn.commit()
-                return make_response(jsonify({"message": "Site added successfully!"}), 201)
-        return make_response(jsonify({"message": "Failed to connect to database"}), 500)
+                return "Site added successfully!", 201
+        return jsonify({"message": "Failed to connect to database"}), 500
     except Exception as e:
-        return make_response(jsonify({"error": str(e)}), 500)
+        return jsonify({"error": str(e)}), 500
     finally:
         release_connection(conn)
 
@@ -74,14 +74,11 @@ def delete_site(id):
             with conn.cursor() as cur:
                 cur.execute(get_site_by_id_query, (id,))
                 if not cur.fetchone():
-                    response = make_response(jsonify({"message": "Site does not exist in the database"}), 404)
-                    return response
+                    return "Site does not exist in the database", 404
                 cur.execute(delete_site_query, (id,))
                 conn.commit()
-                response = make_response(jsonify({"message": "Site deleted successfully."}), 200)
-                return response
-        response = make_response(jsonify({"message": "Failed to connect to database"}), 500)
-        return response
+                return "Site deleted successfully.", 200
+        return jsonify({"message": "Failed to connect to database"}), 500
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
@@ -139,3 +136,54 @@ def is_valid_url(url):
     # Use urlparse to check if the URL has a valid scheme (http or https)
     parsed = urlparse(url)
     return bool(parsed.scheme) and bool(parsed.netloc)
+
+openai.api_key = os.getenv('OPENAI_API_KEY')
+def scrape_page_text(url):
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.content, 'html.parser')
+        # Extract text from the parsed HTML
+        page_text = soup.get_text()
+        return page_text.strip()  # Strip any leading/trailing whitespace
+    except requests.RequestException as e:
+        print("Error fetching page content:", e)
+        return None
+
+def get_gpt_recommendations(text):
+    prompt = f"Generate three title recommendations for the following content:\n\n{text}"
+    try:
+        response = openai.Completion.create(
+            engine="text-davinci-003",
+            prompt=prompt,
+            max_tokens=50,
+            n=3,  # Number of completions to generate
+            stop=None,
+            temperature=0.7
+        )
+        # Extract the generated titles from the response
+        titles = [choice['text'].strip() for choice in response.choices]
+        return titles
+    except Exception as e:
+        print("Error generating GPT recommendations:", e)
+        return []
+
+def scrape_text():
+    try:
+        data = request.get_json()
+        url = data.get('url')
+        if not url:
+            return jsonify({"error": "URL not provided"}), 400
+
+        # Scrape the text content of the page
+        page_text = scrape_page_text(url)
+        if page_text is None:
+            return jsonify({"error": "Failed to scrape page text"}), 500
+
+        # Generate title recommendations using GPT-3
+        titles = get_gpt_recommendations(page_text)
+
+        # Return the scraped text content and title recommendations as JSON response
+        return jsonify({"page_text": page_text, "title_recommendations": titles})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

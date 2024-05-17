@@ -1,5 +1,5 @@
 from flask import Blueprint
-from .controller import get_sites, add_site, get_site_by_id, delete_site, update_site, get_base_urls_of_website
+from .controller import get_sites, add_site, get_site_by_id, delete_site, update_site, get_base_urls_of_website,scrape_text
 
 # Define a blueprint for sites
 site_routes = Blueprint('site_routes', __name__)
@@ -12,3 +12,4 @@ site_routes.add_url_rule("/delete/<int:id>", view_func=delete_site, methods=["DE
 site_routes.add_url_rule("/<int:id>", view_func=update_site, methods=["PUT"])
 # Define routes
 site_routes.add_url_rule("/site", view_func=get_base_urls_of_website, methods=["POST"])
+site_routes.add_url_rule("/scrape_text", view_func=scrape_text, methods=["POST"])
