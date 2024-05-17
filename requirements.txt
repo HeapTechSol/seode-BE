@@ -1,0 +1,9 @@
+flask
+bcrypt
+datetime
+Flask-Migrate
+python-dotenv
+psycopg2-binary
+flask_sqlalchemy
+flask_jwt_extended
+sqlalchemy_serializer
